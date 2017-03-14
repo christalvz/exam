@@ -1,0 +1,187 @@
+drop database stmachine;
+CREATE DATABASE STMACHINE/*!40100 DEFAULT CHARACTER SET utf8 */;
+USE STMACHINE;
+CREATE TABLE events (
+  eventcode varchar(20) NOT NULL,
+  description varchar(100) NOT NULL,
+  PRIMARY KEY (eventcode),
+  UNIQUE KEY eventcode (eventcode)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE statetype (
+  statetype varchar(2) NOT NULL,
+  description varchar(40) NOT NULL,
+  PRIMARY KEY (statetype),
+  UNIQUE KEY statetype (statetype)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE state (
+  statecode varchar(20) NOT NULL,
+  description varchar(100) NOT NULL,
+  statetype varchar(2),  
+  PRIMARY KEY (statecode),
+  UNIQUE KEY statecode (statecode),
+FOREIGN KEY (statetype) REFERENCES statetype (statetype) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE stateflow (
+  id int(11) NOT NULL AUTO_INCREMENT,
+  currentstate varchar(20) NOT NULL,
+  nextstate varchar(20) NOT NULL,
+  event varchar(20) NOT NULL,
+  PRIMARY KEY (id),
+  FOREIGN KEY (event) REFERENCES events (eventcode) ON DELETE CASCADE,
+  FOREIGN KEY (currentstate) REFERENCES state (statecode) ON DELETE CASCADE,
+  FOREIGN KEY (nextstate) REFERENCES state (statecode) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+
+INSERT INTO events
+(eventcode,
+description)
+VALUES
+('BOARD',
+'Board');
+
+INSERT INTO events
+(eventcode,
+description)
+VALUES
+('PASS_MONEY',
+'Pass money');
+
+INSERT INTO events
+(eventcode,
+description)
+VALUES
+('RECEIVE_CHANGE',
+'Receive change');
+
+INSERT INTO events
+(eventcode,
+description)
+VALUES
+('CLICK_COIN_ON_ROOF',
+'Click coin on roof');
+
+INSERT INTO events
+(eventcode,
+description)
+VALUES
+('GET_OFF',
+'Get off');
+
+INSERT INTO events
+(eventcode,
+description)
+VALUES
+('NO_MONEY',
+'No money');
+
+INSERT INTO events
+(eventcode,
+description)
+VALUES
+('NO_CHANGE',
+'No change');
+
+INSERT INTO events
+(eventcode,
+description)
+VALUES
+('RESOLVE',
+'Resolve');
+
+
+
+INSERT INTO statetype
+ VALUES
+('I',
+'Initial state');
+
+INSERT INTO state VALUES
+('WAITING_FOR_JEEP',
+'Waiting for Jeep', (select statetype from statetype where statetype = 'I'));
+INSERT INTO state VALUES
+('WAITING_TO_PAY',
+'Waiting to Pay', null);
+INSERT INTO state VALUES
+('WAITING_FOR_CHANGE',
+'Waiting for change', null);
+INSERT INTO state VALUES
+('RIDING_JEEP',
+'Riding jeep', null);
+INSERT INTO state VALUES
+('WAITING_TO_STOP',
+'Waiting to stop', null);
+INSERT INTO state VALUES
+('CHANGE_RESOLUTION',
+'Change resolution', null);
+
+insert into stateflow (currentstate , nextstate , event) values (
+(SELECT statecode FROM state where statecode = 'WAITING_FOR_JEEP'),
+(SELECT statecode FROM state where statecode = 'WAITING_TO_PAY'), 
+(SELECT eventcode  FROM events where eventcode  = 'BOARD'));
+
+insert into stateflow (currentstate , nextstate , event) values (
+(SELECT statecode FROM state where statecode = 'WAITING_TO_PAY'),
+(SELECT statecode FROM state where statecode = 'WAITING_FOR_CHANGE'), 
+(SELECT eventcode  FROM events where eventcode  = 'PASS_MONEY'));
+
+insert into stateflow (currentstate , nextstate , event) values (
+(SELECT statecode FROM state where statecode = 'WAITING_TO_PAY'),
+(SELECT statecode FROM state where statecode = 'WAITING_TO_STOP'), 
+(SELECT eventcode  FROM events where eventcode  = 'NO_MONEY'));
+
+insert into stateflow (currentstate , nextstate , event) values (
+(SELECT statecode FROM state where statecode = 'WAITING_FOR_CHANGE'),
+(SELECT statecode FROM state where statecode = 'RIDING_JEEP'), 
+(SELECT eventcode  FROM events where eventcode  = 'RECEIVE_CHANGE'));
+
+insert into stateflow (currentstate , nextstate , event) values (
+(SELECT statecode FROM state where statecode = 'WAITING_FOR_CHANGE'),
+(SELECT statecode FROM state where statecode = 'CHANGE_RESOLUTION'), 
+(SELECT eventcode  FROM events where eventcode  = 'NO_CHANGE'));
+
+insert into stateflow (currentstate , nextstate , event) values (
+(SELECT statecode FROM state where statecode = 'RIDING_JEEP'),
+(SELECT statecode FROM state where statecode = 'WAITING_TO_STOP'), 
+(SELECT eventcode  FROM events where eventcode  = 'CLICK_COIN_ON_ROOF'));
+
+insert into stateflow (currentstate , nextstate , event) values (
+(SELECT statecode FROM state where statecode = 'CHANGE_RESOLUTION'),
+(SELECT statecode FROM state where statecode = 'WAITING_TO_STOP'), 
+(SELECT eventcode  FROM events where eventcode  = 'RESOLVE'));
+
+insert into stateflow (currentstate , nextstate , event) values (
+(SELECT statecode FROM state where statecode = 'WAITING_TO_STOP'),
+(SELECT statecode FROM state where statecode = 'WAITING_FOR_JEEP'), 
+(SELECT eventcode  FROM events where eventcode  = 'GET_OFF'));
+
+create table rider(
+  id int not null auto_increment primary key unique,
+  description varchar(100)
+);
+
+INSERT INTO rider (description) VALUES ('Rider 1');
+INSERT INTO rider (description) VALUES ('Rider 2');
+INSERT INTO rider (description) VALUES ('Rider 3');
+
+create table vehicle(
+  id int not null auto_increment primary key unique,
+  description varchar(100)
+);
+
+INSERT INTO vehicle (description) VALUES ('vehicle 1');
+INSERT INTO vehicle (description) VALUES ('vehicle 2');
+INSERT INTO vehicle (description) VALUES ('vehicle 3');
+
+CREATE TABLE userstate (
+  id int not null auto_increment primary key unique,
+  riderid int not null,
+  vehicleid int not null,
+  statecode varchar(20) not null,
+  FOREIGN KEY (riderid) REFERENCES rider (id) ON DELETE CASCADE,
+  FOREIGN KEY (vehicleid) REFERENCES vehicle (id) ON DELETE CASCADE,
+  FOREIGN KEY (statecode) REFERENCES state (statecode) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
